@@ -1,0 +1,33 @@
+<?php
+
+use App\Http\Controllers\Vehicle\VehicleController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+Route::get('/', function () {
+    return Inertia::render('welcome');
+})->name('home');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('dashboard', function () {
+        return Inertia::render('dashboard');
+    })->name('dashboard');
+
+    // Add create package route
+    Route::get('packages/create', function () {
+        return Inertia::render('packages/create');
+    })->name('packages.create');
+});
+
+
+
+// vehicles route
+
+// Add vehicle management routes
+Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicle.store');
+Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicle.index');
+Route::get('/vehicles/paginate', [VehicleController::class, 'paginate'])->name('vehicle.paginate');
+Route::delete('/vehicles/{id}', [VehicleController::class, 'destroy'])->name('vehicle.destroy');
+
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';
