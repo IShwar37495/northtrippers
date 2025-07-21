@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
-import { Head } from '@inertiajs/react';
-import { Calendar, Car, DollarSign, Hotel, Image as ImageIcon, MapPin, Plus, Tag, Upload, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, Calendar, Car, DollarSign, Hotel, Image as ImageIcon, MapPin, Plus, Tag, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 interface Vehicle {
     id: number;
@@ -30,6 +30,32 @@ interface PickupLocation {
     phone?: string;
     email?: string;
     image_url?: string;
+}
+
+interface Package {
+    id: number;
+    name: string;
+    description: string;
+    state: string;
+    tags: string[];
+    min_days: number;
+    max_days: number;
+    min_persons: number;
+    max_persons: number;
+    min_age: number;
+    max_age?: string;
+    base_price: string;
+    meal_price?: string;
+    hotel_price?: string;
+    hotel_included: boolean;
+    meal_included: boolean;
+    meal_times: string;
+    hotel_links?: string;
+    travel_points: string;
+    boarding_location: string;
+    photos: string[];
+    vehicles: Vehicle[];
+    pickup_locations: PickupLocation[];
 }
 
 const INDIAN_STATES = [
@@ -63,37 +89,44 @@ const INDIAN_STATES = [
     'West Bengal',
 ];
 
-export default function CreatePackage() {
+export default function EditPackage({
+    package: packageData,
+    allVehicles,
+    allPickupLocations,
+}: {
+    package: Package;
+    allVehicles: Vehicle[];
+    allPickupLocations: PickupLocation[];
+}) {
     const [form, setForm] = useState({
-        name: '',
-        description: '',
-        state: '',
-        tags: [] as string[],
-        min_days: 1,
-        max_days: 1,
-        min_persons: 1,
-        max_persons: 1,
-        min_age: 0,
-        max_age: '',
-        base_price: '',
-        meal_price: '',
-        hotel_price: '',
-        hotel_included: false,
-        meal_included: false,
-        meal_times: 'one',
-        hotel_links: '',
-        travel_points: '',
-        boarding_location: '',
-        selected_vehicles: [] as number[],
-        selected_pickup_locations: [] as number[],
+        name: packageData.name,
+        description: packageData.description || '',
+        state: packageData.state,
+        tags: packageData.tags || [],
+        min_days: packageData.min_days,
+        max_days: packageData.max_days,
+        min_persons: packageData.min_persons,
+        max_persons: packageData.max_persons,
+        min_age: packageData.min_age,
+        max_age: packageData.max_age || '',
+        base_price: packageData.base_price,
+        meal_price: packageData.meal_price || '',
+        hotel_price: packageData.hotel_price || '',
+        hotel_included: packageData.hotel_included,
+        meal_included: packageData.meal_included,
+        meal_times: packageData.meal_times || 'one',
+        hotel_links: packageData.hotel_links || '',
+        travel_points: packageData.travel_points,
+        boarding_location: packageData.boarding_location,
+        selected_vehicles: packageData.vehicles.map((v) => v.id),
+        selected_pickup_locations: packageData.pickup_locations.map((l) => l.id),
     });
 
-    const [photos, setPhotos] = useState<File[]>([]);
-    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-    const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
-    const [loading, setLoading] = useState(false);
     const [tagInput, setTagInput] = useState('');
+    const [photos, setPhotos] = useState<File[]>([]);
+    const [existingPhotos, setExistingPhotos] = useState<string[]>(packageData.photos || []);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [loading, setLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
 
@@ -104,32 +137,6 @@ export default function CreatePackage() {
                 tags: [...prev.tags, tagInput.trim()],
             }));
             setTagInput('');
-        }
-    };
-
-    // Fetch vehicles and pickup locations on component mount
-    useEffect(() => {
-        fetchVehicles();
-        fetchPickupLocations();
-    }, []);
-
-    const fetchVehicles = async () => {
-        try {
-            const response = await fetch('/vehicles/paginate?per_page=100');
-            const data = await response.json();
-            setVehicles(data.vehicles.data);
-        } catch (error) {
-            console.error('Failed to fetch vehicles:', error);
-        }
-    };
-
-    const fetchPickupLocations = async () => {
-        try {
-            const response = await fetch('/pickup-locations/paginate?per_page=100');
-            const data = await response.json();
-            setPickupLocations(data.pickupLocations.data);
-        } catch (error) {
-            console.error('Failed to fetch pickup locations:', error);
         }
     };
 
@@ -182,6 +189,10 @@ export default function CreatePackage() {
 
     const removePhoto = (index: number) => {
         setPhotos((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const removeExistingPhoto = (index: number) => {
+        setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
     };
 
     const toggleVehicle = (vehicleId: number) => {
@@ -267,6 +278,9 @@ export default function CreatePackage() {
         // Debug: Log form data
         console.log('Form data being sent:', form);
 
+        // Add _method field for Laravel to handle PUT request
+        formData.append('_method', 'PUT');
+
         // Add all form fields
         Object.entries(form).forEach(([key, value]) => {
             if (key === 'tags') {
@@ -281,13 +295,13 @@ export default function CreatePackage() {
             }
         });
 
-        // Add photos
+        // Add new photos
         photos.forEach((photo, index) => {
             formData.append(`photos[${index}]`, photo);
         });
 
         try {
-            const response = await fetch('/packages', {
+            const response = await fetch(`/packages/${packageData.id}`, {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -295,7 +309,16 @@ export default function CreatePackage() {
                 },
             });
 
-            const responseData = await response.json();
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            let responseData;
+
+            try {
+                responseData = await response.json();
+            } catch (jsonError) {
+                console.error('Failed to parse JSON response:', jsonError);
+                throw new Error('Invalid server response');
+            }
 
             // Debug: Log response
             console.log('Response status:', response.status);
@@ -303,7 +326,7 @@ export default function CreatePackage() {
 
             if (!response.ok) {
                 // Extract detailed error message
-                let errorMessage = 'Failed to create package';
+                let errorMessage = 'Failed to update package';
 
                 if (responseData.errors) {
                     // Handle validation errors - show all errors
@@ -323,39 +346,13 @@ export default function CreatePackage() {
 
             toast({
                 title: 'Success!',
-                description: 'Package created successfully!',
+                description: 'Package updated successfully!',
                 variant: 'success',
             });
-
-            // Reset form
-            setForm({
-                name: '',
-                description: '',
-                state: '',
-                tags: [],
-                min_days: 1,
-                max_days: 1,
-                min_persons: 1,
-                max_persons: 1,
-                min_age: 0,
-                max_age: '',
-                base_price: '',
-                meal_price: '',
-                hotel_price: '',
-                hotel_included: false,
-                meal_included: false,
-                meal_times: 'one',
-                hotel_links: '',
-                travel_points: '',
-                boarding_location: '',
-                selected_vehicles: [],
-                selected_pickup_locations: [],
-            });
-            setPhotos([]);
         } catch (error) {
-            console.error('Package creation error:', error);
+            console.error('Package update error:', error);
 
-            let errorMessage = 'Failed to create package';
+            let errorMessage = 'Failed to update package';
 
             if (error instanceof Error) {
                 errorMessage = error.message;
@@ -365,12 +362,14 @@ export default function CreatePackage() {
 
             // Show error in console for debugging
             console.error('Error message to display:', errorMessage);
+            console.error('Full error object:', error);
 
+            // Force the toast to show with a more visible error
             toast({
                 title: 'Error',
-                description: errorMessage,
+                description: errorMessage || 'An unknown error occurred',
                 variant: 'destructive',
-                duration: 5000, // Show for 5 seconds
+                duration: 8000, // Show for 8 seconds
             });
         } finally {
             setLoading(false);
@@ -379,11 +378,19 @@ export default function CreatePackage() {
 
     return (
         <div className="mx-auto max-w-4xl space-y-8 p-6">
-            <Head title="Create Package" />
+            <Head title="Edit Package" />
 
-            <div className="space-y-2 text-center">
-                <h1 className="text-3xl font-bold tracking-tight">Create New Package</h1>
-                <p className="text-muted-foreground">Design an amazing travel experience for your customers</p>
+            <div className="flex items-center gap-4">
+                <Link href="/packages">
+                    <Button variant="outline" size="sm">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Packages
+                    </Button>
+                </Link>
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight">Edit Package</h1>
+                    <p className="text-muted-foreground">Update your travel package details</p>
+                </div>
             </div>
 
             <form className="space-y-8" onSubmit={handleSubmit}>
@@ -481,6 +488,28 @@ export default function CreatePackage() {
                             Package Photos (Max 5)
                         </h2>
 
+                        {/* Existing Photos */}
+                        {existingPhotos.length > 0 && (
+                            <div className="space-y-2">
+                                <Label>Existing Photos</Label>
+                                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+                                    {existingPhotos.map((photo, index) => (
+                                        <div key={`existing-${index}`} className="group relative">
+                                            <img src={photo} alt={`Existing photo ${index + 1}`} className="h-24 w-full rounded-lg object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeExistingPhoto(index)}
+                                                className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* New Photos Upload */}
                         <div
                             className={`rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
                                 isDragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
@@ -490,7 +519,7 @@ export default function CreatePackage() {
                             onDrop={handleDrop}
                         >
                             <Upload className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                            <p className="mb-2 text-lg font-medium">Drag & drop photos here</p>
+                            <p className="mb-2 text-lg font-medium">Drag & drop new photos here</p>
                             <p className="mb-4 text-sm text-muted-foreground">or click to browse</p>
                             <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
                                 Choose Files
@@ -498,24 +527,28 @@ export default function CreatePackage() {
                             <input ref={fileInputRef} type="file" multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
                         </div>
 
+                        {/* New Photos Preview */}
                         {photos.length > 0 && (
-                            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-                                {photos.map((photo, index) => (
-                                    <div key={index} className="group relative">
-                                        <img
-                                            src={URL.createObjectURL(photo)}
-                                            alt={`Photo ${index + 1}`}
-                                            className="h-24 w-full rounded-lg object-cover"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => removePhoto(index)}
-                                            className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    </div>
-                                ))}
+                            <div className="space-y-2">
+                                <Label>New Photos</Label>
+                                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+                                    {photos.map((photo, index) => (
+                                        <div key={`new-${index}`} className="group relative">
+                                            <img
+                                                src={URL.createObjectURL(photo)}
+                                                alt={`New photo ${index + 1}`}
+                                                className="h-24 w-full rounded-lg object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removePhoto(index)}
+                                                className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -678,7 +711,7 @@ export default function CreatePackage() {
                         </h2>
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {vehicles.map((vehicle) => (
+                            {allVehicles.map((vehicle) => (
                                 <div
                                     key={vehicle.id}
                                     className={`cursor-pointer rounded-lg border p-4 transition-all ${
@@ -707,7 +740,7 @@ export default function CreatePackage() {
                             ))}
                         </div>
 
-                        {vehicles.length === 0 && (
+                        {allVehicles.length === 0 && (
                             <p className="py-8 text-center text-muted-foreground">No vehicles available. Please add vehicles first.</p>
                         )}
                     </div>
@@ -722,7 +755,7 @@ export default function CreatePackage() {
                         </h2>
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {pickupLocations.map((location) => (
+                            {allPickupLocations.map((location) => (
                                 <div
                                     key={location.id}
                                     className={`cursor-pointer rounded-lg border p-4 transition-all ${
@@ -751,7 +784,7 @@ export default function CreatePackage() {
                             ))}
                         </div>
 
-                        {pickupLocations.length === 0 && (
+                        {allPickupLocations.length === 0 && (
                             <p className="py-8 text-center text-muted-foreground">
                                 No pickup locations available. Please add pickup locations first.
                             </p>
@@ -875,10 +908,10 @@ export default function CreatePackage() {
                         {loading ? (
                             <>
                                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                                Creating Package...
+                                Updating Package...
                             </>
                         ) : (
-                            'Create Package'
+                            'Update Package'
                         )}
                     </Button>
                 </div>

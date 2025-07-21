@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { LayoutGrid, Plus, Car } from 'lucide-react';
+import { Calendar, Car, LayoutGrid, MapPin, Plus } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -18,22 +18,22 @@ const mainNavItems: NavItem[] = [
         href: '/packages/create',
         icon: Plus,
     },
-
-    { title:'Vehicles',
-      href:'/vehicles',
-      icon: Car,
-
+    {
+        title: 'Create Event',
+        href: '/events/create',
+        icon: Plus,
     },
-
-
-
+    { title: 'Vehicles', href: '/vehicles', icon: Car },
+    { title: 'Pickup Locations', href: '/pickup-locations', icon: MapPin },
+    { title: 'Packages', href: '/packages', icon: MapPin },
+    { title: 'Events', href: '/events', icon: Calendar },
 ];
 
 const footerNavItems: NavItem[] = [
     {
-        title: "Nothing",
-        href: "https:://www.google.com",
-        icon: Plus
+        title: 'Nothing',
+        href: 'https:://www.google.com',
+        icon: Plus,
     },
 ];
 

@@ -7,20 +7,23 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { router, usePage } from '@inertiajs/react';
-import { ArrowLeft, Calendar, Car, ChevronLeft, ChevronRight, Loader2, Plus, Search, Trash2, User } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Mail, MapPin, Phone, Plus, Search, Trash2 } from 'lucide-react';
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 
-interface Vehicle {
+interface PickupLocation {
     id: number;
     name: string;
-    model: string;
-    year: number;
+    address: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    phone?: string;
+    email?: string;
     image_url?: string;
-    owner?: string;
 }
 
-interface PaginatedVehicles {
-    data: Vehicle[];
+interface PaginatedPickupLocations {
+    data: PickupLocation[];
     current_page: number;
     last_page: number;
     per_page: number;
@@ -34,25 +37,28 @@ interface PaginatedVehicles {
     }>;
 }
 
-export default function Vehicles({ vehicles: propVehicles }: { vehicles?: PaginatedVehicles }) {
-    const page = usePage<{ vehicles?: PaginatedVehicles }>();
-    const vehiclesData = propVehicles || page.props.vehicles;
-    const [vehicles, setVehicles] = useState<Vehicle[]>(vehiclesData?.data || []);
-    const [paginationInfo, setPaginationInfo] = useState(vehiclesData || null);
-    const [originalVehicles, setOriginalVehicles] = useState<Vehicle[]>(vehiclesData?.data || []);
-    const [originalPaginationInfo, setOriginalPaginationInfo] = useState(vehiclesData || null);
-    const [isInitialLoad, setIsInitialLoad] = useState(!vehiclesData?.data);
+export default function PickupLocations({ pickupLocations: propPickupLocations }: { pickupLocations?: PaginatedPickupLocations }) {
+    const page = usePage<{ pickupLocations?: PaginatedPickupLocations }>();
+    const pickupLocationsData = propPickupLocations || page.props.pickupLocations;
+    const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>(pickupLocationsData?.data || []);
+    const [paginationInfo, setPaginationInfo] = useState(pickupLocationsData || null);
+    const [originalPickupLocations, setOriginalPickupLocations] = useState<PickupLocation[]>(pickupLocationsData?.data || []);
+    const [originalPaginationInfo, setOriginalPaginationInfo] = useState(pickupLocationsData || null);
+    const [isInitialLoad, setIsInitialLoad] = useState(!pickupLocationsData?.data);
     const [form, setForm] = useState({
         name: '',
-        model: '',
-        year: '',
-        owner: '',
+        address: '',
+        city: '',
+        state: '',
+        zip_code: '',
+        phone: '',
+        email: '',
         image: null as File | null,
     });
     const [loading, setLoading] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [deleteVehicleId, setDeleteVehicleId] = useState<number | null>(null);
+    const [deleteLocationId, setDeleteLocationId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -63,17 +69,17 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
         window.history.back();
     };
 
-    const confirmDeleteVehicle = (vehicleId: number) => {
-        setDeleteVehicleId(vehicleId);
+    const confirmDeleteLocation = (locationId: number) => {
+        setDeleteLocationId(locationId);
     };
 
-    const handleDeleteVehicle = async () => {
-        if (!deleteVehicleId) return;
+    const handleDeleteLocation = async () => {
+        if (!deleteLocationId) return;
 
         setIsDeleting(true);
 
         try {
-            const response = await fetch(`/vehicles/${deleteVehicleId}`, {
+            const response = await fetch(`/pickup-locations/${deleteLocationId}`, {
                 method: 'DELETE',
                 headers: {
                     Accept: 'application/json',
@@ -82,20 +88,20 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
                 },
             });
 
-            if (!response.ok) throw new Error('Failed to delete vehicle');
+            if (!response.ok) throw new Error('Failed to delete pickup location');
 
             // Remove from UI immediately after successful deletion
-            setVehicles((prevVehicles) => prevVehicles.filter((v) => v.id !== deleteVehicleId));
+            setPickupLocations((prevLocations) => prevLocations.filter((l) => l.id !== deleteLocationId));
 
             toast({
                 title: 'Success!',
-                description: 'Vehicle deleted successfully!',
+                description: 'Pickup location deleted successfully!',
                 variant: 'success',
                 duration: 3000,
             });
 
             // Close dialog and reset state
-            setDeleteVehicleId(null);
+            setDeleteLocationId(null);
 
             // Update pagination info if needed
             if (paginationInfo) {
@@ -114,8 +120,8 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
                 );
 
                 // If current page becomes empty and not the first page, go to previous page
-                const remainingVehicles = vehicles.filter((v) => v.id !== deleteVehicleId);
-                if (remainingVehicles.length === 0 && paginationInfo.current_page > 1) {
+                const remainingLocations = pickupLocations.filter((l) => l.id !== deleteLocationId);
+                if (remainingLocations.length === 0 && paginationInfo.current_page > 1) {
                     setTimeout(() => {
                         handlePageChange(paginationInfo.current_page - 1);
                     }, 500);
@@ -124,7 +130,7 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
         } catch (error) {
             toast({
                 title: 'Error',
-                description: 'Failed to delete vehicle',
+                description: 'Failed to delete pickup location',
                 variant: 'destructive',
                 duration: 5000,
             });
@@ -140,7 +146,7 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
 
         try {
             const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
-            const response = await fetch(`/vehicles/paginate?page=${page}&per_page=${paginationInfo?.per_page || 2}${searchParam}`, {
+            const response = await fetch(`/pickup-locations/paginate?page=${page}&per_page=${paginationInfo?.per_page || 2}${searchParam}`, {
                 method: 'GET',
                 headers: {
                     Accept: 'application/json',
@@ -150,15 +156,15 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
                 },
             });
 
-            if (!response.ok) throw new Error('Failed to fetch vehicles');
+            if (!response.ok) throw new Error('Failed to fetch pickup locations');
 
             const data = await response.json();
-            setVehicles(data.vehicles.data);
-            setPaginationInfo(data.vehicles);
+            setPickupLocations(data.pickupLocations.data);
+            setPaginationInfo(data.pickupLocations);
         } catch (error) {
             toast({
                 title: 'Error',
-                description: 'Failed to load vehicles',
+                description: 'Failed to load pickup locations',
                 variant: 'destructive',
                 duration: 5000,
             });
@@ -173,14 +179,14 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
         try {
             // If search query is empty, restore original data
             if (!searchQuery.trim()) {
-                setVehicles(originalVehicles);
+                setPickupLocations(originalPickupLocations);
                 setPaginationInfo(originalPaginationInfo);
                 setIsLoading(false);
                 return;
             }
 
             const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
-            const response = await fetch(`/vehicles/paginate?page=1&per_page=${paginationInfo?.per_page || 2}${searchParam}`, {
+            const response = await fetch(`/pickup-locations/paginate?page=1&per_page=${paginationInfo?.per_page || 2}${searchParam}`, {
                 method: 'GET',
                 headers: {
                     Accept: 'application/json',
@@ -190,15 +196,15 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
                 },
             });
 
-            if (!response.ok) throw new Error('Failed to search vehicles');
+            if (!response.ok) throw new Error('Failed to search pickup locations');
 
             const data = await response.json();
-            setVehicles(data.vehicles.data);
-            setPaginationInfo(data.vehicles);
+            setPickupLocations(data.pickupLocations.data);
+            setPaginationInfo(data.pickupLocations);
         } catch (error) {
             toast({
                 title: 'Error',
-                description: 'Failed to search vehicles',
+                description: 'Failed to search pickup locations',
                 variant: 'destructive',
                 duration: 5000,
             });
@@ -208,22 +214,22 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
     };
 
     useEffect(() => {
-        if (page.props.vehicles) {
-            setVehicles(page.props.vehicles.data || []);
-            setPaginationInfo(page.props.vehicles);
-            setOriginalVehicles(page.props.vehicles.data || []);
-            setOriginalPaginationInfo(page.props.vehicles);
+        if (page.props.pickupLocations) {
+            setPickupLocations(page.props.pickupLocations.data || []);
+            setPaginationInfo(page.props.pickupLocations);
+            setOriginalPickupLocations(page.props.pickupLocations.data || []);
+            setOriginalPaginationInfo(page.props.pickupLocations);
             setIsLoading(false);
             setIsInitialLoad(false);
         }
-    }, [page.props.vehicles]);
+    }, [page.props.pickupLocations]);
 
     // Set initial load to false after component mounts if we have data
     useEffect(() => {
-        if (vehiclesData?.data) {
+        if (pickupLocationsData?.data) {
             setIsInitialLoad(false);
         }
-    }, [vehiclesData]);
+    }, [pickupLocationsData]);
 
     // Debounced search effect
     useEffect(() => {
@@ -262,15 +268,18 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
 
         const formData = new FormData();
         formData.append('name', form.name);
-        formData.append('model', form.model);
-        formData.append('year', form.year);
-        formData.append('owner', form.owner);
+        formData.append('address', form.address);
+        formData.append('city', form.city);
+        formData.append('state', form.state);
+        formData.append('zip_code', form.zip_code);
+        formData.append('phone', form.phone);
+        formData.append('email', form.email);
         if (form.image) formData.append('image', form.image);
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
         try {
-            const res = await fetch('/vehicles', {
+            const res = await fetch('/pickup-locations', {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -278,20 +287,20 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
                 },
             });
 
-            if (!res.ok) throw new Error('Failed to add vehicle');
+            if (!res.ok) throw new Error('Failed to add pickup location');
 
             toast({
                 title: 'Success!',
-                description: 'Vehicle added successfully!',
+                description: 'Pickup location added successfully!',
                 variant: 'success',
                 duration: 5000,
             });
 
-            setForm({ name: '', model: '', year: '', owner: '', image: null });
+            setForm({ name: '', address: '', city: '', state: '', zip_code: '', phone: '', email: '', image: null });
             setIsDialogOpen(false);
 
             // Refresh current page data
-            router.reload({ only: ['vehicles'] });
+            router.reload({ only: ['pickupLocations'] });
         } catch (err) {
             toast({
                 title: 'Error',
@@ -304,7 +313,7 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
         }
     };
 
-    const VehicleSkeleton = () => (
+    const LocationSkeleton = () => (
         <Card className="h-full overflow-hidden">
             <div className="relative aspect-[4/3] bg-muted">
                 <Skeleton className="h-full w-full rounded-none" />
@@ -332,8 +341,8 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
 
             <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Vehicles</h1>
-                    <p className="text-sm text-muted-foreground sm:text-base">Manage your vehicle fleet</p>
+                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Pickup Locations</h1>
+                    <p className="text-sm text-muted-foreground sm:text-base">Manage your pickup locations</p>
                 </div>
 
                 <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:gap-4 sm:space-y-0">
@@ -341,7 +350,7 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
                     <div className="relative w-full sm:w-64">
                         <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                         <Input
-                            placeholder="Search vehicles..."
+                            placeholder="Search locations..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-10"
@@ -354,7 +363,7 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
                                 onClick={() => {
                                     setSearchQuery('');
                                     // Immediately restore original data
-                                    setVehicles(originalVehicles);
+                                    setPickupLocations(originalPickupLocations);
                                     setPaginationInfo(originalPaginationInfo);
                                 }}
                             >
@@ -367,48 +376,84 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
                         <DialogTrigger asChild>
                             <Button className="w-full gap-2 sm:w-auto">
                                 <Plus className="h-4 w-4" />
-                                <span className="hidden sm:inline">Add Vehicle</span>
+                                <span className="hidden sm:inline">Add Location</span>
                                 <span className="sm:hidden">Add</span>
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="mx-4 max-w-[calc(100vw-2rem)] sm:mx-0 sm:max-w-md">
                             <DialogHeader>
-                                <DialogTitle>Add New Vehicle</DialogTitle>
+                                <DialogTitle>Add New Pickup Location</DialogTitle>
                             </DialogHeader>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Vehicle Name</Label>
+                                    <Label htmlFor="name">Location Name</Label>
                                     <Input
                                         id="name"
                                         name="name"
                                         value={form.name}
                                         onChange={handleChange}
-                                        placeholder="Enter vehicle name"
+                                        placeholder="Enter location name"
                                         required
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="model">Model</Label>
-                                    <Input id="model" name="model" value={form.model} onChange={handleChange} placeholder="Enter model" required />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="year">Year</Label>
+                                    <Label htmlFor="address">Address</Label>
                                     <Input
-                                        id="year"
-                                        name="year"
-                                        type="number"
-                                        value={form.year}
+                                        id="address"
+                                        name="address"
+                                        value={form.address}
                                         onChange={handleChange}
-                                        placeholder="Enter year"
+                                        placeholder="Enter full address"
                                         required
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="owner">Owner (Optional)</Label>
-                                    <Input id="owner" name="owner" value={form.owner} onChange={handleChange} placeholder="Enter owner name" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="city">City</Label>
+                                        <Input id="city" name="city" value={form.city} onChange={handleChange} placeholder="Enter city" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="state">State</Label>
+                                        <Input
+                                            id="state"
+                                            name="state"
+                                            value={form.state}
+                                            onChange={handleChange}
+                                            placeholder="Enter state"
+                                            required
+                                        />
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="image">Vehicle Image</Label>
+                                    <Label htmlFor="zip_code">ZIP Code</Label>
+                                    <Input
+                                        id="zip_code"
+                                        name="zip_code"
+                                        value={form.zip_code}
+                                        onChange={handleChange}
+                                        placeholder="Enter ZIP code"
+                                        required
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="phone">Phone (Optional)</Label>
+                                        <Input id="phone" name="phone" value={form.phone} onChange={handleChange} placeholder="Enter phone number" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">Email (Optional)</Label>
+                                        <Input
+                                            id="email"
+                                            name="email"
+                                            type="email"
+                                            value={form.email}
+                                            onChange={handleChange}
+                                            placeholder="Enter email address"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="image">Location Image</Label>
                                     <Input id="image" name="image" type="file" accept="image/*" onChange={handleChange} required />
                                 </div>
 
@@ -422,7 +467,7 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
                                         Cancel
                                     </Button>
                                     <Button type="submit" disabled={loading} className="order-1 flex-1 sm:order-2">
-                                        {loading ? 'Adding...' : 'Add Vehicle'}
+                                        {loading ? 'Adding...' : 'Add Location'}
                                     </Button>
                                 </div>
                             </form>
@@ -433,47 +478,52 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
 
             <div className="grid min-h-[400px] gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {isLoading ? (
-                    Array.from({ length: paginationInfo?.per_page || 2 }).map((_, i) => <VehicleSkeleton key={i} />)
-                ) : vehicles.length > 0 ? (
-                    vehicles.map((vehicle) => (
-                        <Card key={vehicle.id} className="group flex h-full flex-col overflow-hidden transition-shadow hover:shadow-md">
+                    Array.from({ length: paginationInfo?.per_page || 2 }).map((_, i) => <LocationSkeleton key={i} />)
+                ) : pickupLocations.length > 0 ? (
+                    pickupLocations.map((location) => (
+                        <Card key={location.id} className="group flex h-full flex-col overflow-hidden transition-shadow hover:shadow-md">
                             <div className="relative aspect-[4/3] bg-muted">
-                                {vehicle.image_url ? (
+                                {location.image_url ? (
                                     <img
-                                        src={vehicle.image_url}
-                                        alt={vehicle.name}
+                                        src={location.image_url}
+                                        alt={location.name}
                                         className="h-full w-full object-cover"
                                         style={{ aspectRatio: '4/3' }}
                                     />
                                 ) : (
                                     <div className="flex h-full items-center justify-center">
-                                        <Car className="h-12 w-12 text-muted-foreground" />
+                                        <MapPin className="h-12 w-12 text-muted-foreground" />
                                     </div>
                                 )}
                                 <Button
                                     variant="destructive"
                                     size="sm"
                                     className="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100"
-                                    onClick={() => confirmDeleteVehicle(vehicle.id)}
-                                    disabled={isDeleting && deleteVehicleId === vehicle.id}
+                                    onClick={() => confirmDeleteLocation(location.id)}
+                                    disabled={isDeleting && deleteLocationId === location.id}
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>
                             <div className="flex flex-1 flex-col space-y-3 p-4">
                                 <div className="flex-1">
-                                    <h3 className="text-lg leading-tight font-semibold">{vehicle.name}</h3>
-                                    <p className="text-muted-foreground">{vehicle.model}</p>
+                                    <h3 className="text-lg leading-tight font-semibold">{location.name}</h3>
+                                    <p className="text-muted-foreground">{location.address}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {location.city}, {location.state} {location.zip_code}
+                                    </p>
                                 </div>
                                 <div className="mt-auto flex items-center gap-4 text-sm text-muted-foreground">
-                                    <div className="flex items-center gap-1">
-                                        <Calendar className="h-4 w-4" />
-                                        {vehicle.year}
-                                    </div>
-                                    {vehicle.owner && (
+                                    {location.phone && (
                                         <div className="flex items-center gap-1">
-                                            <User className="h-4 w-4" />
-                                            {vehicle.owner}
+                                            <Phone className="h-4 w-4" />
+                                            {location.phone}
+                                        </div>
+                                    )}
+                                    {location.email && (
+                                        <div className="flex items-center gap-1">
+                                            <Mail className="h-4 w-4" />
+                                            {location.email}
                                         </div>
                                     )}
                                 </div>
@@ -482,12 +532,12 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
                     ))
                 ) : (
                     <div className="col-span-full py-12 text-center">
-                        <Car className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                        <h3 className="mb-2 text-lg font-medium">No vehicles found</h3>
-                        <p className="mb-4 text-muted-foreground">Get started by adding your first vehicle</p>
+                        <MapPin className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                        <h3 className="mb-2 text-lg font-medium">No pickup locations found</h3>
+                        <p className="mb-4 text-muted-foreground">Get started by adding your first pickup location</p>
                         <Button onClick={() => setIsDialogOpen(true)} className="gap-2">
                             <Plus className="h-4 w-4" />
-                            Add Vehicle
+                            Add Location
                         </Button>
                     </div>
                 )}
@@ -524,25 +574,27 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
 
             {/* Delete Confirmation Dialog */}
             <Dialog
-                open={deleteVehicleId !== null}
+                open={deleteLocationId !== null}
                 onOpenChange={(open) => {
                     if (!open && !isDeleting) {
-                        setDeleteVehicleId(null);
+                        setDeleteLocationId(null);
                     }
                 }}
             >
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Delete Vehicle</DialogTitle>
+                        <DialogTitle>Delete Pickup Location</DialogTitle>
                     </DialogHeader>
                     <div className="py-4">
-                        <p className="text-sm text-muted-foreground">Are you sure you want to delete this vehicle? This action cannot be undone.</p>
+                        <p className="text-sm text-muted-foreground">
+                            Are you sure you want to delete this pickup location? This action cannot be undone.
+                        </p>
                     </div>
                     <div className="flex gap-3 pt-4">
-                        <Button type="button" variant="outline" onClick={() => setDeleteVehicleId(null)} disabled={isDeleting} className="flex-1">
+                        <Button type="button" variant="outline" onClick={() => setDeleteLocationId(null)} disabled={isDeleting} className="flex-1">
                             Cancel
                         </Button>
-                        <Button type="button" variant="destructive" onClick={handleDeleteVehicle} disabled={isDeleting} className="flex-1">
+                        <Button type="button" variant="destructive" onClick={handleDeleteLocation} disabled={isDeleting} className="flex-1">
                             {isDeleting ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
