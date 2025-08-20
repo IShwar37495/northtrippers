@@ -1,3 +1,4 @@
+import BackButton from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -7,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { router, usePage } from '@inertiajs/react';
-import { ArrowLeft, Calendar, Car, ChevronLeft, ChevronRight, Loader2, Plus, Search, Trash2, User } from 'lucide-react';
+import { Calendar, Car, ChevronLeft, ChevronRight, Loader2, Plus, Search, Trash2, User } from 'lucide-react';
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 
 interface Vehicle {
@@ -324,11 +325,7 @@ export default function Vehicles({ vehicles: propVehicles }: { vehicles?: Pagina
 
     return (
         <div className="mx-auto max-w-6xl space-y-4 p-4 sm:space-y-6 sm:p-6">
-            {/* Back button */}
-            <Button variant="ghost" onClick={handleGoBack} className="mb-2 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800">
-                <ArrowLeft className="h-4 w-4" />
-                Back
-            </Button>
+            <BackButton text="Back" className="mb-2" />
 
             <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <div>

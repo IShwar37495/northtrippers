@@ -1,4 +1,4 @@
-import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 
@@ -11,9 +11,14 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                 {items.map((item) => (
                     <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild isActive={page.url.startsWith(item.href)} tooltip={{ children: item.title }}>
-                            <Link href={item.href} prefetch>
+                            <Link href={item.href} prefetch className="relative">
                                 {item.icon && <item.icon />}
                                 <span>{item.title}</span>
+                                {item.badgeCount && item.badgeCount > 0 && (
+                                    <SidebarMenuBadge className="absolute top-0 right-0 z-10 bg-red-600 text-white">
+                                        {item.badgeCount}
+                                    </SidebarMenuBadge>
+                                )}
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

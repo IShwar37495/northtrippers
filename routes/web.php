@@ -56,6 +56,12 @@ Route::get('/events/list', [EventController::class, 'list'])->name('events.list'
 Route::get('/events/paginate', [EventController::class, 'paginate'])->name('events.paginate');
 Route::get('/events/search', [EventController::class, 'search'])->name('events.search');
 Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
+Route::get('/events/{event}/book', [EventController::class, 'bookPage'])->name('events.bookPage');
+Route::post('/events/{event}/book', [EventController::class, 'book'])->name('events.book');
+Route::get('/events/booking-success', function () {
+    return Inertia::render('events/booking-success');
+})->name('events.bookingSuccess');
+Route::get('/events/{event}/pay/{slot}', [App\Http\Controllers\Event\EventController::class, 'payPage'])->name('events.pay');
 
 // Payment route
 Route::get('/payment', function () {
@@ -80,6 +86,65 @@ Route::get('/pickup-locations/api', [PickupLocationController::class, 'apiIndex'
 Route::get('/pickup-locations/paginate', [PickupLocationController::class, 'paginate'])->name('pickup-location.paginate');
 Route::get('/pickup-locations/search', [PickupLocationController::class, 'search'])->name('pickup-location.search');
 Route::delete('/pickup-locations/{id}', [PickupLocationController::class, 'destroy'])->name('pickup-location.destroy');
+
+// Admin event payments management
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/event-payments', [\App\Http\Controllers\Event\EventPaymentController::class, 'adminIndex'])->name('admin.eventPayments');
+    Route::post('/admin/event-payments/{payment}/refund', [\App\Http\Controllers\Event\EventPaymentController::class, 'refund'])->name('admin.eventPayments.refund');
+});
+
+// Admin event bookings page (protected by auth)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin-event-bookings', function () {
+        return Inertia::render('admin-event-bookings');
+    })->name('admin.eventBookings');
+
+    // Test route for debugging notifications
+    Route::get('/test-notification', function () {
+        $user = auth()->user();
+        if ($user && ($user->hasRole('admin') || $user->hasRole('superadmin'))) {
+            // Create a test booking
+            $testBooking = \App\Models\EventBooking::create([
+                'event_id' => 1,
+                'slot_id' => 1,
+                'users' => [['first_name' => 'Test', 'last_name' => 'User', 'email' => 'test@example.com', 'phone' => '1234567890']],
+                'payment_id' => 'test_payment_' . time(),
+                'payment_status' => 'paid',
+                'payment_method' => 'test',
+                'payment_details' => ['test' => true],
+            ]);
+
+            // Send notification to current user
+            $user->notify(new \App\Notifications\EventBookedNotification($testBooking));
+
+            return response()->json(['success' => true, 'message' => 'Test notification sent']);
+        }
+        return response()->json(['success' => false, 'message' => 'Not authorized'], 403);
+    })->name('test.notification');
+
+    // Test route for WhatsApp notifications
+    Route::get('/test-whatsapp', function () {
+        $user = auth()->user();
+        if ($user && ($user->hasRole('admin') || $user->hasRole('superadmin'))) {
+            // Create a test booking
+            $testBooking = \App\Models\EventBooking::create([
+                'event_id' => 1,
+                'slot_id' => 1,
+                'users' => [['first_name' => 'Test', 'last_name' => 'User', 'email' => 'test@example.com', 'phone' => '1234567890']],
+                'payment_id' => 'test_payment_' . time(),
+                'payment_status' => 'paid',
+                'payment_method' => 'test',
+                'payment_details' => ['test' => true],
+            ]);
+
+            // Send WhatsApp notification to the configured number
+            $user->notify(new \App\Notifications\EventBookedNotification($testBooking));
+
+            return response()->json(['success' => true, 'message' => 'WhatsApp test notification sent to +8628037495']);
+        }
+        return response()->json(['success' => false, 'message' => 'Not authorized'], 403);
+    })->name('test.whatsapp');
+});
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

@@ -192,6 +192,35 @@ interface Location {
     state: string;
 }
 
+// Add Event interface (copied from events/index.tsx)
+interface Event {
+    id: number;
+    name: string;
+    state: string;
+    days: number;
+    itinerary: string[];
+    meal_included: boolean;
+    meal_times: string;
+    meal_price: string;
+    hotel_included: boolean;
+    hotel_price: string;
+    min_age: number;
+    max_age?: string;
+    photos: string[];
+    available_slots: number;
+    vehicle_id: number;
+    vehicle_name: string;
+    vehicle_model: string;
+    activities: string[];
+    boarding_point: string;
+    pickup_location_id: number;
+    pickup_location_name: string;
+    pickup_location_city: string;
+    base_price: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export default function Welcome() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Location[]>([]);
@@ -209,6 +238,11 @@ export default function Welcome() {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [displayedPackages, setDisplayedPackages] = useState<Package[]>([]);
 
+    // Event state
+    const [events, setEvents] = useState<Event[]>([]);
+    const [loadingEvents, setLoadingEvents] = useState(false);
+    const [displayedEvents, setDisplayedEvents] = useState<Event[]>([]);
+
     // Fetch packages on component mount
     useEffect(() => {
         fetchPackages();
@@ -220,6 +254,15 @@ export default function Welcome() {
         setDisplayedPackages(packagesToShow);
         setCurrentSlide(0);
     }, [filteredPackages]);
+
+    // Fetch events on component mount
+    useEffect(() => {
+        fetchEvents();
+    }, []);
+
+    useEffect(() => {
+        setDisplayedEvents(events.slice(0, 6));
+    }, [events]);
 
     // Handle scroll-based navigation visibility
     useEffect(() => {
@@ -247,6 +290,24 @@ export default function Welcome() {
             setFilteredPackages(data.packages || []);
         } catch (error) {
             console.error('Error fetching packages:', error);
+        }
+    };
+
+    const fetchEvents = async () => {
+        setLoadingEvents(true);
+        try {
+            const response = await fetch('/events/list');
+            const data = await response.json();
+            if (data.success) {
+                setEvents(data.events || []);
+            } else {
+                setEvents([]);
+            }
+        } catch (error) {
+            setEvents([]);
+            console.error('Error fetching events:', error);
+        } finally {
+            setLoadingEvents(false);
         }
     };
 
@@ -686,6 +747,99 @@ export default function Welcome() {
                     <div className="flex flex-col items-center text-white/70">
                         <span className="mb-2 text-sm">Explore More</span>
                         <ArrowRight className="h-6 w-6 rotate-90" />
+                    </div>
+                </div>
+            </section>
+
+            {/* Events Section (NEW) */}
+            <section className="bg-gradient-to-br from-[#f5f7fa] to-[#eaf6f6] px-4 py-20 dark:from-gray-900 dark:to-black">
+                <div className="mx-auto max-w-7xl">
+                    <div className="mb-16 text-center">
+                        <h2 className="mb-4 flex items-center justify-center gap-2 text-4xl font-bold md:text-5xl">
+                            <Award className="mr-2 inline-block h-8 w-8 text-[#238636]" />
+                            Upcoming Events
+                        </h2>
+                        <p className="mx-auto max-w-2xl text-xl text-muted-foreground">
+                            Join our exclusive events for unforgettable adventures and memories
+                        </p>
+                    </div>
+                    {loadingEvents ? (
+                        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                            {Array.from({ length: 3 }).map((_, idx) => (
+                                <div key={idx} className="h-64 animate-pulse rounded-xl bg-white p-8 shadow-md" />
+                            ))}
+                        </div>
+                    ) : displayedEvents.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                            {displayedEvents.map((event) => (
+                                <Card key={event.id} className="group overflow-hidden transition-all duration-300 hover:shadow-xl">
+                                    <div className="relative h-48 overflow-hidden">
+                                        {event.photos && event.photos.length > 0 ? (
+                                            <img
+                                                src={event.photos[0]}
+                                                alt={event.name}
+                                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#238636] to-[#1a6b2a]">
+                                                <Calendar className="h-16 w-16 text-white" />
+                                            </div>
+                                        )}
+                                        <div className="absolute top-4 right-4">
+                                            <Badge className="bg-[#238636] text-white">{event.state}</Badge>
+                                        </div>
+                                    </div>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-xl">
+                                            <Award className="h-5 w-5 text-[#238636]" />
+                                            {event.name}
+                                        </CardTitle>
+                                        <CardDescription className="line-clamp-2">
+                                            {event.activities && event.activities.length > 0
+                                                ? event.activities.slice(0, 3).join(', ')
+                                                : 'Adventure event'}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="mb-4 flex items-center gap-4">
+                                            <div className="flex items-center gap-1">
+                                                <Calendar className="h-4 w-4 text-gray-500" />
+                                                <span className="text-sm text-gray-500">{event.days} days</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Users className="h-4 w-4 text-gray-500" />
+                                                <span className="text-sm text-gray-500">{event.available_slots} slots</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <span className="text-2xl font-bold text-[#238636]">
+                                                    ₹{parseInt(event.base_price).toLocaleString()}
+                                                </span>
+                                                <span className="text-sm text-gray-500">/person</span>
+                                            </div>
+                                            <Link href={`/events/${event.id}`}>
+                                                <Button className="bg-[#238636] hover:bg-[#1a6b2a]">View Details</Button>
+                                            </Link>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center">
+                            <Calendar className="mx-auto mb-4 h-16 w-16 text-gray-400" />
+                            <p className="text-lg text-gray-500">No events found</p>
+                        </div>
+                    )}
+                    {/* See All Events Button */}
+                    <div className="mt-12 text-center">
+                        <Link href="/events/browse">
+                            <Button size="lg" variant="outline" className="border-[#238636] text-[#238636] hover:bg-[#238636] hover:text-white">
+                                See All Events
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </section>

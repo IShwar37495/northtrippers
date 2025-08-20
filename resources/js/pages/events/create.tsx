@@ -1,3 +1,4 @@
+import BackButton from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -318,7 +319,8 @@ export default function CreateEvent() {
         <div className="min-h-screen bg-background">
             <Head title="Create Event - North Trippers" />
 
-            <div className="container mx-auto px-4 py-8">
+            <div className="mx-auto max-w-4xl space-y-8 p-6">
+                <BackButton text="Back to Events" className="mb-6" />
                 {/* Header */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between">

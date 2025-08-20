@@ -1,3 +1,4 @@
+import BackButton from '@/components/ui/back-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,6 +96,7 @@ export default function EventDetail({ event: eventData }: { event: Event }) {
     return (
         <div className="min-h-screen bg-background">
             <Head title={`${eventData.name} - North Trippers`} />
+            <BackButton text="Back to Events" className="mb-6" />
 
             {/* Header */}
             <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -375,7 +377,9 @@ export default function EventDetail({ event: eventData }: { event: Event }) {
                                 <div className="border-t border-border" />
 
                                 <div className="space-y-3">
-                                    <Button className="w-full bg-[#238636] py-6 text-lg hover:bg-[#1a6b2a]">Book Now</Button>
+                                    <Link href={`/events/${eventData.id}/book`}>
+                                        <Button className="w-full bg-[#238636] py-6 text-lg hover:bg-[#1a6b2a]">Book Now</Button>
+                                    </Link>
                                     <Button variant="outline" className="w-full">
                                         Contact Us
                                     </Button>

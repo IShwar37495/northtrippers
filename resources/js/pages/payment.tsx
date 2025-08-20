@@ -1,9 +1,10 @@
+import BackButton from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Calendar, CreditCard, Users } from 'lucide-react';
+import { Head } from '@inertiajs/react';
+import { Calendar, CreditCard, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface BookingInfo {
@@ -68,21 +69,7 @@ export default function Payment() {
     return (
         <div className="min-h-screen bg-background">
             <Head title="Payment - North Trippers" />
-
-            {/* Header */}
-            <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <Link href="/">
-                            <Button variant="outline" size="sm">
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back to Home
-                            </Button>
-                        </Link>
-                        <h1 className="text-xl font-semibold">Complete Payment</h1>
-                    </div>
-                </div>
-            </div>
+            <BackButton text="Back to Home" className="mb-6" />
 
             <div className="container mx-auto px-4 py-8">
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">

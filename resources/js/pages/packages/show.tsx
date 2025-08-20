@@ -1,3 +1,4 @@
+import BackButton from '@/components/ui/back-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -199,6 +200,7 @@ export default function PackageDetail({ package: packageData }: { package: Packa
     return (
         <div className="min-h-screen bg-background">
             <Head title={`${packageData.name} - North Trippers`} />
+            <BackButton text="Back to Home" className="mb-6" />
 
             {/* Header */}
             <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

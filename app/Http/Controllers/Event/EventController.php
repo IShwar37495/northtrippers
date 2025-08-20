@@ -494,4 +494,72 @@ class EventController extends Controller
             ], 500);
         }
     }
+
+    public function bookPage($id)
+    {
+        $event = DB::table('events')->where('id', $id)->first();
+        if (!$event) abort(404);
+        $event->photos = json_decode($event->photos, true) ?? [];
+        return Inertia::render('events/bookEvent', [
+            'event' => [
+                'id' => $event->id,
+                'name' => $event->name,
+                'state' => $event->state,
+                'days' => $event->days,
+                'base_price' => $event->base_price,
+                'available_slots' => $event->available_slots,
+                'photos' => $event->photos,
+            ],
+        ]);
+    }
+
+    public function book(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'slots' => 'required|integer|min:1',
+            'persons' => 'required|array',
+            'persons.*.first_name' => 'required|string|max:255',
+            'persons.*.last_name' => 'required|string|max:255',
+            'persons.*.email' => 'required|email',
+            'persons.*.phone' => 'required|string|max:20',
+            'total_amount' => 'required|numeric|min:0',
+        ]);
+        $event = DB::table('events')->where('id', $id)->first();
+        if (!$event) abort(404);
+        if ($validated['slots'] > $event->available_slots) {
+            return back()->withErrors(['message' => 'Not enough slots available']);
+        }
+        $slot = \App\Models\EventSlot::create([
+            'event_id' => $id,
+            'status' => 'pending',
+            'total_amount' => $validated['total_amount'],
+            'slots' => $validated['slots'],
+            'persons' => $validated['persons'],
+        ]);
+        // Optionally, decrease available_slots in events table here
+        // Redirect to the new optimized payment page
+        return redirect()->route('events.pay', ['event' => $id, 'slot' => $slot->id]);
+    }
+
+    public function payPage($eventId, $slotId)
+    {
+        $event = DB::table('events')->where('id', $eventId)->first();
+        $slot = \App\Models\EventSlot::find($slotId);
+        if (!$event || !$slot) abort(404);
+        $eventData = [
+            'id' => $event->id,
+            'name' => $event->name,
+            'state' => $event->state,
+            'days' => $event->days,
+            'base_price' => $event->base_price,
+            'available_slots' => $event->available_slots,
+            'photos' => json_decode($event->photos, true) ?? [],
+        ];
+        return Inertia::render('events/payPage', [
+            'event' => $eventData,
+            'slotId' => $slot->id,
+            'totalAmount' => $slot->total_amount,
+            'persons' => $slot->persons,
+        ]);
+    }
 }

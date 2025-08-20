@@ -1,3 +1,4 @@
+import BackButton from '@/components/ui/back-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -380,6 +381,7 @@ export default function CreatePackage() {
     return (
         <div className="mx-auto max-w-4xl space-y-8 p-6">
             <Head title="Create Package" />
+            <BackButton text="Back to Packages" className="mb-6" />
 
             <div className="space-y-2 text-center">
                 <h1 className="text-3xl font-bold tracking-tight">Create New Package</h1>

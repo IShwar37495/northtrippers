@@ -5,6 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import { Calendar, Car, LayoutGrid, MapPin, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -27,6 +28,8 @@ const mainNavItems: NavItem[] = [
     { title: 'Pickup Locations', href: '/pickup-locations', icon: MapPin },
     { title: 'Packages', href: '/packages', icon: MapPin },
     { title: 'Events', href: '/events', icon: Calendar },
+    // Add Event Bookings tab for admin
+    { title: 'Event Bookings', href: '/admin-event-bookings', icon: Calendar },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -38,6 +41,66 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const [eventBookingCount, setEventBookingCount] = useState(0);
+
+    useEffect(() => {
+        console.log('[Sidebar Debug] Setting up Echo subscription');
+        console.log('[Sidebar Debug] Echo available:', !!window.Echo);
+        console.log('[Sidebar Debug] Laravel user:', window.Laravel?.user);
+
+        // Only subscribe for admin/superadmin
+        if (
+            window.Echo &&
+            window.Laravel &&
+            window.Laravel.user &&
+            window.Laravel.user.role &&
+            (window.Laravel.user.role.name === 'admin' || window.Laravel.user.role.name === 'superadmin')
+        ) {
+            // Listen for shared event booking events
+            window.Echo.private('admin-event-bookings').listen('EventBookingCreated', (event: any) => {
+                console.log('[Echo] EventBookingCreated received:', event);
+                setEventBookingCount((prev) => {
+                    const newCount = prev + 1;
+                    console.log('[Echo] Event booking badge count updated:', newCount);
+                    return newCount;
+                });
+            });
+
+            // Optionally, keep the per-user notification for other features
+        } else {
+            console.log('[Sidebar Debug] Cannot subscribe - missing requirements:', {
+                hasEcho: !!window.Echo,
+                hasLaravel: !!window.Laravel,
+                hasUser: !!window.Laravel?.user,
+                hasRole: !!window.Laravel?.user?.role,
+                roleName: window.Laravel?.user?.role?.name,
+                isAdmin: window.Laravel?.user?.role?.name === 'admin' || window.Laravel?.user?.role?.name === 'superadmin',
+            });
+        }
+        // Optionally cleanup
+        return () => {
+            if (
+                window.Echo &&
+                window.Laravel &&
+                window.Laravel.user &&
+                window.Laravel.user.role &&
+                (window.Laravel.user.role.name === 'admin' || window.Laravel.user.role.name === 'superadmin')
+            ) {
+                window.Echo.private('admin-event-bookings').stopListening('EventBookingCreated');
+            }
+        };
+    }, []);
+
+    // Reset badge count when visiting the Event Bookings page
+    useEffect(() => {
+        if (window.location.pathname === '/admin-event-bookings') {
+            setEventBookingCount(0);
+        }
+    }, [window.location.pathname]);
+
+    // Clone and inject badgeCount into the Event Bookings nav item
+    const navItemsWithBadge = mainNavItems.map((item) => (item.title === 'Event Bookings' ? { ...item, badgeCount: eventBookingCount } : item));
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -53,7 +116,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={navItemsWithBadge} />
             </SidebarContent>
 
             <SidebarFooter>
