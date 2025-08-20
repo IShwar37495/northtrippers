@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
-import { Head } from '@inertiajs/react';
-import { Calendar, Car, DollarSign, Hotel, Image as ImageIcon, MapPin, Plus, Tag, Upload, X } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, Calendar, Car, DollarSign, Hotel, Image as ImageIcon, MapPin, Plus, Tag, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface Vehicle {
@@ -382,6 +382,13 @@ export default function CreatePackage() {
         <div className="mx-auto max-w-4xl space-y-8 p-6">
             <Head title="Create Package" />
             <BackButton text="Back to Packages" className="mb-6" />
+
+            <div className="flex items-center gap-4">
+                <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Dashboard
+                </Link>
+            </div>
 
             <div className="space-y-2 text-center">
                 <h1 className="text-3xl font-bold tracking-tight">Create New Package</h1>

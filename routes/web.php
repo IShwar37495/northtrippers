@@ -4,6 +4,7 @@ use App\Http\Controllers\Vehicle\VehicleController;
 use App\Http\Controllers\PickupLocation\PickupLocationController;
 use App\Http\Controllers\Package\PackageController;
 use App\Http\Controllers\Event\EventController;
+use App\Http\Controllers\Inquiry\InquiryController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -71,11 +72,13 @@ Route::get('/payment', function () {
 // vehicles route
 
 // Add vehicle management routes
-Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicle.store');
-Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicle.index');
-Route::get('/vehicles/api', [VehicleController::class, 'apiIndex'])->name('vehicle.api.index');
-Route::get('/vehicles/paginate', [VehicleController::class, 'paginate'])->name('vehicle.paginate');
-Route::delete('/vehicles/{id}', [VehicleController::class, 'destroy'])->name('vehicle.destroy');
+Route::middleware(['auth'])->group(function () {
+    Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicle.store');
+    Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicle.index');
+    Route::get('/vehicles/api', [VehicleController::class, 'apiIndex'])->name('vehicle.api.index');
+    Route::get('/vehicles/paginate', [VehicleController::class, 'paginate'])->name('vehicle.paginate');
+    Route::delete('/vehicles/{id}', [VehicleController::class, 'destroy'])->name('vehicle.destroy');
+});
 
 // pickup locations route
 
@@ -144,6 +147,12 @@ Route::middleware(['auth'])->group(function () {
         }
         return response()->json(['success' => false, 'message' => 'Not authorized'], 403);
     })->name('test.whatsapp');
+});
+
+// inquiry routes
+Route::post('/inquiries', [InquiryController::class, 'store'])->name('inquiries.store');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/inquiries', [InquiryController::class, 'index'])->name('inquiries.index');
 });
 
 require __DIR__ . '/settings.php';

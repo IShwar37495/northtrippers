@@ -357,9 +357,42 @@ export default function Welcome() {
         filterPackages(location.state);
     };
 
-    const handleSearchSubmit = () => {
+    const handleSearchSubmit = async () => {
         setShowSearchResults(false);
-        filterPackages(searchQuery);
+        
+        // If no search query, just filter packages
+        if (!searchQuery.trim()) {
+            filterPackages(searchQuery);
+            return;
+        }
+
+        try {
+            const response = await fetch('/inquiries', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: JSON.stringify({
+                    destination: searchQuery,
+                    travel_date: selectedDate ? selectedDate.toISOString().split('T')[0] : null,
+                    travelers: null, // Can be enhanced later
+                }),
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Inquiry sent successfully! We will contact you soon.');
+                // Also filter packages for immediate results
+                filterPackages(searchQuery);
+            } else {
+                alert('Failed to send inquiry. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error sending inquiry:', error);
+            alert('Failed to send inquiry. Please try again.');
+        }
     };
 
     // Package slider functions
@@ -684,7 +717,7 @@ export default function Welcome() {
                                     className="transform rounded-xl bg-[#238636] px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:bg-[#1a6b2a] hover:shadow-xl"
                                 >
                                     <Search className="mr-2 h-5 w-5" />
-                                    Search Packages
+                                    Send Inquiry
                                 </Button>
                             </div>
                         </div>
@@ -856,42 +889,45 @@ export default function Welcome() {
 
                     {displayedPackages.length > 0 ? (
                         <div className="relative">
-                            {/* Navigation Arrows */}
-                            <div className="absolute top-1/2 -left-4 z-10 -translate-y-1/2 transform md:-left-8">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={prevSlide}
-                                    disabled={currentSlide === 0}
-                                    className="h-12 w-12 rounded-full bg-white shadow-lg hover:bg-gray-50 disabled:opacity-50"
-                                >
-                                    <ArrowLeft className="h-6 w-6" />
-                                </Button>
-                            </div>
+                            {/* Navigation Arrows - Only show if more than 3 packages */}
+                            {displayedPackages.length > 3 && (
+                                <>
+                                    <div className="absolute top-1/2 -left-4 z-10 -translate-y-1/2 transform md:-left-8">
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={prevSlide}
+                                            disabled={currentSlide === 0}
+                                            className="h-12 w-12 rounded-full bg-white shadow-lg hover:bg-gray-50 disabled:opacity-50"
+                                        >
+                                            <ArrowLeft className="h-6 w-6" />
+                                        </Button>
+                                    </div>
 
-                            <div className="absolute top-1/2 -right-4 z-10 -translate-y-1/2 transform md:-right-8">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={nextSlide}
-                                    disabled={displayedPackages.length <= 3 || currentSlide >= 1}
-                                    className="h-12 w-12 rounded-full bg-white shadow-lg hover:bg-gray-50 disabled:opacity-50"
-                                >
-                                    <ArrowRight className="h-6 w-6" />
-                                </Button>
-                            </div>
+                                    <div className="absolute top-1/2 -right-4 z-10 -translate-y-1/2 transform md:-right-8">
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={nextSlide}
+                                            disabled={currentSlide >= 1}
+                                            className="h-12 w-12 rounded-full bg-white shadow-lg hover:bg-gray-50 disabled:opacity-50"
+                                        >
+                                            <ArrowRight className="h-6 w-6" />
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
 
                             {/* Package Slider */}
                             <div className="overflow-hidden">
-                                <div
-                                    className="flex transition-transform duration-500 ease-in-out"
-                                    style={{
-                                        transform: `translateX(-${currentSlide * 100}%)`,
-                                    }}
-                                >
-                                    {/* First slide - First 3 packages */}
-                                    <div className="grid w-full flex-shrink-0 grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                                        {displayedPackages.slice(0, 3).map((pkg) => (
+                                {displayedPackages.length <= 3 ? (
+                                    /* Static layout for 1-3 packages */
+                                    <div className={`grid w-full gap-8 ${
+                                        displayedPackages.length === 1 ? 'grid-cols-1 max-w-2xl mx-auto' :
+                                        displayedPackages.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
+                                        'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                                    }`}>
+                                        {displayedPackages.map((pkg) => (
                                             <Card key={pkg.id} className="group overflow-hidden transition-all duration-300 hover:shadow-xl">
                                                 <div className="relative h-48 overflow-hidden">
                                                     {pkg.photos && pkg.photos.length > 0 ? (
@@ -946,9 +982,73 @@ export default function Welcome() {
                                             </Card>
                                         ))}
                                     </div>
+                                ) : (
+                                    /* Slider layout for 4+ packages */
+                                    <div
+                                        className="flex transition-transform duration-500 ease-in-out"
+                                        style={{
+                                            transform: `translateX(-${currentSlide * 100}%)`,
+                                        }}
+                                    >
+                                        {/* First slide - First 3 packages */}
+                                        <div className="grid w-full flex-shrink-0 grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                                            {displayedPackages.slice(0, 3).map((pkg) => (
+                                                <Card key={pkg.id} className="group overflow-hidden transition-all duration-300 hover:shadow-xl">
+                                                    <div className="relative h-48 overflow-hidden">
+                                                        {pkg.photos && pkg.photos.length > 0 ? (
+                                                            <img
+                                                                src={pkg.photos[0]}
+                                                                alt={pkg.name}
+                                                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#238636] to-[#1a6b2a]">
+                                                                <Mountain className="h-16 w-16 text-white" />
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute top-4 right-4">
+                                                            <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white">
+                                                                <Heart className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                        <div className="absolute bottom-4 left-4">
+                                                            <Badge className="bg-[#238636] text-white">{pkg.state}</Badge>
+                                                        </div>
+                                                    </div>
 
-                                    {/* Second slide - Next 3 packages (if they exist) */}
-                                    {displayedPackages.length > 3 && (
+                                                    <CardHeader>
+                                                        <CardTitle className="text-xl">{pkg.name}</CardTitle>
+                                                        <CardDescription className="line-clamp-2">{pkg.description}</CardDescription>
+                                                    </CardHeader>
+
+                                                    <CardContent>
+                                                        <div className="mb-4 flex items-center gap-4">
+                                                            <div className="flex items-center gap-1">
+                                                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                                                <span className="text-sm font-medium">4.8</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <Clock className="h-4 w-4 text-gray-500" />
+                                                                <span className="text-sm text-gray-500">
+                                                                    {pkg.min_days}-{pkg.max_days} days
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <span className="text-2xl font-bold text-[#238636]">₹{pkg.base_price}</span>
+                                                                <span className="text-sm text-gray-500">/person</span>
+                                                            </div>
+                                                            <Link href={`/packages/${pkg.id}`}>
+                                                                <Button className="bg-[#238636] hover:bg-[#1a6b2a]">View Details</Button>
+                                                            </Link>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+
+                                        {/* Second slide - Next 3 packages */}
                                         <div className="grid w-full flex-shrink-0 grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                                             {displayedPackages.slice(3, 6).map((pkg) => (
                                                 <Card key={pkg.id} className="group overflow-hidden transition-all duration-300 hover:shadow-xl">
@@ -1005,8 +1105,8 @@ export default function Welcome() {
                                                 </Card>
                                             ))}
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* See All Button */}

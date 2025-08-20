@@ -325,10 +325,10 @@ export default function CreateEvent() {
                 <div className="mb-8">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Link href="/events">
+                            <Link href="/dashboard">
                                 <Button variant="outline" size="sm">
                                     <ArrowLeft className="mr-2 h-4 w-4" />
-                                    Back to Events
+                                    Back to Dashboard
                                 </Button>
                             </Link>
                             <div>

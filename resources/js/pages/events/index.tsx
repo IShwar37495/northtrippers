@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { Head, Link } from '@inertiajs/react';
-import { Calendar, Car, Edit, Hotel, MapPin, Plus, Search, Trash2, Users, Utensils } from 'lucide-react';
+import { ArrowLeft, Calendar, Car, Edit, Hotel, MapPin, Plus, Search, Trash2, Users, Utensils } from 'lucide-react';
 import { useState } from 'react';
 
 interface Event {
@@ -146,6 +146,12 @@ export default function Events({ events: initialEvents }: { events: Event[] }) {
             <div className="container mx-auto px-4 py-8">
                 {/* Header */}
                 <div className="mb-8">
+                    <div className="flex items-center gap-4 mb-4">
+                        <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                            <ArrowLeft className="h-4 w-4" />
+                            Back to Dashboard
+                        </Link>
+                    </div>
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-3xl font-bold">Events Management</h1>

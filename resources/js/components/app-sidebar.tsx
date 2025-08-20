@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Calendar, Car, LayoutGrid, MapPin, Plus } from 'lucide-react';
+import { Calendar, Car, LayoutGrid, MapPin, MessageSquare, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AppLogo from './app-logo';
 
@@ -30,6 +30,7 @@ const mainNavItems: NavItem[] = [
     { title: 'Events', href: '/events', icon: Calendar },
     // Add Event Bookings tab for admin
     { title: 'Event Bookings', href: '/admin-event-bookings', icon: Calendar },
+    { title: 'Inquiries', href: '/inquiries', icon: MessageSquare },
 ];
 
 const footerNavItems: NavItem[] = [
